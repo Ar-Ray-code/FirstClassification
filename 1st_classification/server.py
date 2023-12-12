@@ -27,6 +27,13 @@ form_html = """
         <form action="/" method="post" enctype="multipart/form-data">
             <input type="file" name="zip">
             <input type="submit">
+            <br>
+            <label for="prompt_text">Prompt Text:</label>
+            <input type="text" name="prompt_text" id="prompt_text" value="a photography of">
+            <br>
+            <label for="target_keywords">Target Keywords (comma-separated):</label>
+            <input type="text" name="target_keywords" id="target_keywords" value="person,cat,dog">
+            <br>
         </form>
     </body>
 </html>
@@ -41,7 +48,18 @@ def load():
     input_bin = request.files['zip'].read()
     print('--input_bin--')
     print('input_bin-size: ', len(input_bin))
-    zip_interface.load(input_bin)
+    # if over 100MB, return error
+    if len(input_bin) > 100000000:
+        return 'File size is too large. Please upload a file smaller than 100MB.'
+
+    prompt_text = request.form['prompt_text']
+    if prompt_text == '':
+        prompt_text = 'a photography of'
+    target_keywords = request.form['target_keywords'].split(',')
+    target_keywords = [x.strip() for x in target_keywords]
+    zip_interface.load(upload_zip_binary=input_bin,
+                       prompt_text=prompt_text,
+                       target_keywords=target_keywords)
     result_filename = zip_interface.run()
     del zip_interface
     return send_file(result_filename, mimetype='application/zip', download_name='output.zip', as_attachment=True)
